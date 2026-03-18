@@ -1,11 +1,20 @@
 from datetime import datetime, timedelta
-import pytest
 
 from django.conf import settings
 from django.test.client import Client
+from django.urls import reverse
+import pytest
 
-from news.forms import BAD_WORDS
 from news.models import Comment, News
+
+COMMENT_TEXT = 'Текст комментария'
+
+
+@pytest.fixture(autouse=True)
+def enable_db_access_for_all_tests(
+    db,  # noqa
+):
+    pass
 
 
 @pytest.fixture
@@ -43,88 +52,56 @@ def news_count_on_home_page():
 
 
 @pytest.fixture
-def multiple_news(db, news_count_on_home_page):
-    today = datetime.today()
-    all_news = [
+def multiple_news(news_count_on_home_page):
+    News.objects.bulk_create([
         News(
             title=f'Новость {index}',
             text='Просто текст.',
-            date=today - timedelta(days=index)
+            date=datetime.today() - timedelta(days=index)
         )
         for index in range(news_count_on_home_page + 1)
-    ]
-    News.objects.bulk_create(all_news)
+    ])
 
 
 @pytest.fixture
-def comment_text():
-    return 'Текст комментария'
-
-
-@pytest.fixture
-def new_comment_text():
-    return 'Обновлённый комментарий'
-
-
-@pytest.fixture
-def comment(news, author, comment_text):
+def comment(news, author):
     return Comment.objects.create(
         news=news,
         author=author,
-        text=comment_text
+        text=COMMENT_TEXT
     )
 
 
 @pytest.fixture
-def form_data(comment_text):
-    return {'text': comment_text}
-
-
-@pytest.fixture
-def new_form_data(new_comment_text):
-    return {'text': new_comment_text}
-
-
-@pytest.fixture
-def bad_words_data():
-    return {'text': f'Какой-то текст, {BAD_WORDS[0]}, еще текст'}
-
-
-@pytest.fixture
-def id_news_for_args(news):
-    return (news.id,)
-
-
-@pytest.fixture
-def id_comment_for_args(comment):
-    return (comment.id,)
-
-
-@pytest.fixture
 def login_url():
-    return 'users:login'
+    return reverse('users:login')
 
 
 @pytest.fixture
 def signup_url():
-    return 'users:signup'
+    return reverse('users:signup')
 
 
 @pytest.fixture
 def home_url():
-    return 'news:home'
+    return reverse('news:home')
 
 
 @pytest.fixture
-def detail_url():
-    return 'news:detail'
+def detail_url(news):
+    return reverse('news:detail', args=(news.id,))
 
 
 @pytest.fixture
-def edit_url():
-    return 'news:edit'
+def edit_url(comment):
+    return reverse('news:edit', args=(comment.id,))
 
 
 @pytest.fixture
-def delete_url():
-    return 'news:delete'
+def delete_url(comment):
+    return reverse('news:delete', args=(comment.id,))
+
+
+@pytest.fixture
+def url_to_comments(detail_url):
+    return detail_url + '#comments'

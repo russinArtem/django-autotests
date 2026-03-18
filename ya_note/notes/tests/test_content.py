@@ -1,55 +1,41 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.urls import reverse
-
+from .base_test_case import BaseTestCase
 from notes.forms import NoteForm
-from notes.models import Note
-
-User = get_user_model()
 
 
-class TestNotePage(TestCase):
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.author = User.objects.create(username='Автор')
-        cls.not_author = User.objects.create(username='Не автор')
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст заметки',
-            slug='note-slug',
-            author=cls.author,
-        )
-
-    def test_notes_list_for_different_users(self):
+class TestNotePage(BaseTestCase):
+    def test_note_in_list_for_author(self):
         """
         Отдельная заметка передаётся на страницу со списком заметок в списке
-        object_list, в словаре context;
+        notes, в словаре context.
+        """
+        notes = self.author_client.get(self.LIST_URL).context['object_list']
+        self.assertIn(
+            self.note,
+            notes
+        )
+        note_from_notes = next(
+            (note for note in notes if note.pk == self.note.pk),
+            None
+        )
+        self.assertEqual(note_from_notes.title, self.note.title)
+        self.assertEqual(note_from_notes.text, self.note.text)
+        self.assertEqual(note_from_notes.slug, self.note.slug)
+        self.assertEqual(note_from_notes.author, self.note.author)
+
+    def test_note_not_in_list_for_another_user(self):
+        """
         В список заметок одного пользователя не попадают заметки
         другого пользователя.
         """
-        for user, expected_result in (
-            (self.author, True),
-            (self.not_author, False),
-        ):
-            self.client.force_login(user)
-            object_list = self.client.get(reverse('notes:list')).context[
-                'object_list'
-            ]
-            with self.subTest(user=user.username):
-                if expected_result:
-                    self.assertIn(self.note, object_list)
-                else:
-                    self.assertNotIn(self.note, object_list)
+        self.assertNotIn(
+            self.note,
+            self.not_author_client.get(self.LIST_URL).context['object_list']
+        )
 
     def test_pages_contains_form(self):
         """На страницы создания и редактирования заметки передаются формы"""
-        self.client.force_login(self.author)
-        for name, args in (
-            ('notes:add', None),
-            ('notes:edit', (self.note.slug,))
-        ):
-            with self.subTest(name=name):
-                form = self.client.get(reverse(name, args=args)).context
+        for url in (self.ADD_URL, self.EDIT_URL):
+            with self.subTest(url=url):
+                form = self.author_client.get(url).context
                 self.assertIn('form', form)
-                self.assertTrue(isinstance(form['form'], NoteForm))
+                self.assertIsInstance(form['form'], NoteForm)
