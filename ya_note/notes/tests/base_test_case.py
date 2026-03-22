@@ -24,14 +24,12 @@ class BaseTestCase(TestCase):
     DETAIL_URL = reverse('notes:detail', args=(NOTE_SLUG,))
     EDIT_URL = reverse('notes:edit', args=(NOTE_SLUG,))
     DELETE_URL = reverse('notes:delete', args=(NOTE_SLUG,))
-    LOGIN_REDIRECT_URLS = {
-        'list': f'{LOGIN_URL}?next={LIST_URL}',
-        'add': f'{LOGIN_URL}?next={ADD_URL}',
-        'success': f'{LOGIN_URL}?next={SUCCESS_URL}',
-        'detail': f'{LOGIN_URL}?next={DETAIL_URL}',
-        'edit': f'{LOGIN_URL}?next={EDIT_URL}',
-        'delete': f'{LOGIN_URL}?next={DELETE_URL}',
-    }
+    LOGIN_REDIRECT_LIST = f'{LOGIN_URL}?next={LIST_URL}'
+    LOGIN_REDIRECT_ADD = f'{LOGIN_URL}?next={ADD_URL}'
+    LOGIN_REDIRECT_SUCCESS = f'{LOGIN_URL}?next={SUCCESS_URL}'
+    LOGIN_REDIRECT_DETAIL = f'{LOGIN_URL}?next={DETAIL_URL}'
+    LOGIN_REDIRECT_EDIT = f'{LOGIN_URL}?next={EDIT_URL}'
+    LOGIN_REDIRECT_DELETE = f'{LOGIN_URL}?next={DELETE_URL}'
 
     @classmethod
     def setUpTestData(cls):

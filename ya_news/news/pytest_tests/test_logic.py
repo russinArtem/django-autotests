@@ -33,13 +33,15 @@ def test_user_can_create_comment(
     assert comment.author == author
 
 
-@pytest.mark.parametrize('bad_word', BAD_WORDS)
-def test_user_cant_use_bad_words(author_client, detail_url, bad_word):
+@pytest.mark.parametrize('data', [
+    {'text': bad_word} for bad_word in BAD_WORDS
+])
+def test_user_cant_use_bad_words(author_client, detail_url, data):
     """
     Если комментарий содержит запрещённые слова, он не будет опубликован,
     а форма вернёт ошибку.
     """
-    response = author_client.post(detail_url, data={'text': bad_word})
+    response = author_client.post(detail_url, data=data)
     assertFormError(response.context['form'], 'text', errors=WARNING)
     assert response.status_code == HTTPStatus.OK
     assert Comment.objects.count() == 0

@@ -1,6 +1,5 @@
 from .base_test_case import BaseTestCase
 from notes.forms import NoteForm
-from notes.models import Note
 
 
 class TestNotePage(BaseTestCase):
@@ -9,11 +8,9 @@ class TestNotePage(BaseTestCase):
         Отдельная заметка передаётся на страницу со списком заметок в списке
         notes, в словаре context.
         """
-        self.assertIn(
-            self.note,
-            self.author_client.get(self.LIST_URL).context['object_list']
-        )
-        note = Note.objects.get(id=self.note.id)
+        notes = self.author_client.get(self.LIST_URL).context['object_list']
+        self.assertIn(self.note, notes)
+        note = notes.get(id=self.note.id)
         self.assertEqual(note.title, self.note.title)
         self.assertEqual(note.text, self.note.text)
         self.assertEqual(note.slug, self.note.slug)
