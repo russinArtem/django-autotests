@@ -1,44 +1,47 @@
-from http import HTTPStatus
-
 from .base_test_case import BaseTestCase
 
 
 class TestRoutes(BaseTestCase):
     def test_pages_availability(self):
-        """
-        Главная страница доступна анонимному пользователю.
-        Страницы регистрации пользователей, входа в учётную запись и выхода из
-        неё доступны всем пользователям.
-        Аутентифицированному пользователю доступны страницы:
-        со списком заметок, успешного добавления заметки и
-        добавления новой заметки.
-        Страницы отдельной заметки, удаления и редактирования заметки
-        доступны только автору заметки. Если на эти страницы попытается зайти
-        другой пользователь — вернётся ошибка 404.
-        """
-        for url, client, expected_status in [
-            [self.HOME_URL, self.client, HTTPStatus.OK],
-            [self.LOGIN_URL, self.client, HTTPStatus.OK],
-            [self.SIGNUP_URL, self.client, HTTPStatus.OK],
-            [self.LOGOUT_URL, self.client, HTTPStatus.OK],
-            [self.LIST_URL, self.not_author_client, HTTPStatus.OK],
-            [self.ADD_URL, self.not_author_client, HTTPStatus.OK],
-            [self.SUCCESS_URL, self.not_author_client, HTTPStatus.OK],
-            [self.DETAIL_URL, self.author_client, HTTPStatus.OK],
-            [self.EDIT_URL, self.author_client, HTTPStatus.OK],
-            [self.DELETE_URL, self.author_client, HTTPStatus.OK],
-            [self.DETAIL_URL, self.not_author_client, HTTPStatus.NOT_FOUND],
-            [self.EDIT_URL, self.not_author_client, HTTPStatus.NOT_FOUND],
-            [self.DELETE_URL, self.not_author_client, HTTPStatus.NOT_FOUND],
-        ]:
-            with self.subTest(
-                url=url, client=client, expected_status=expected_status
-            ):
-                if url == self.LOGOUT_URL:
-                    response = client.post(url)
-                else:
-                    response = client.get(url)
-                self.assertEqual(response.status_code, expected_status)
+        response_code_test_cases = {
+            self.HOME_URL: [(self.client.get, self.OK)],
+            self.LOGIN_URL: [(self.client.get, self.OK)],
+            self.SIGNUP_URL: [(self.client.get, self.OK)],
+            self.LOGOUT_URL: [(self.client.post, self.OK)],
+            self.LIST_URL: [
+                (self.not_author_client.get, self.OK),
+                (self.client.get, self.FOUND),
+            ],
+            self.ADD_URL: [
+                (self.not_author_client.get, self.OK),
+                (self.client.get, self.FOUND),
+            ],
+            self.SUCCESS_URL: [
+                (self.not_author_client.get, self.OK),
+                (self.client.get, self.FOUND),
+            ],
+            self.DETAIL_URL: [
+                (self.author_client.get, self.OK),
+                (self.not_author_client.get, self.NOT_FOUND),
+                (self.client.get, self.FOUND),
+            ],
+            self.EDIT_URL: [
+                (self.author_client.get, self.OK),
+                (self.not_author_client.get, self.NOT_FOUND),
+                (self.client.get, self.FOUND),
+            ],
+            self.DELETE_URL: [
+                (self.author_client.get, self.OK),
+                (self.not_author_client.get, self.NOT_FOUND),
+                (self.client.get, self.FOUND),
+            ],
+        }
+        for url, response_parameters in response_code_test_cases.items():
+            for client, expected_status in response_parameters:
+                with self.subTest(
+                    url=url, client=client, expected_status=expected_status
+                ):
+                    self.assertEqual(client(url).status_code, expected_status)
 
     def test_redirects(self):
         """
@@ -47,16 +50,16 @@ class TestRoutes(BaseTestCase):
         записи, добавления заметки, отдельной заметки, редактирования или
         удаления заметки.
         """
-        for url in (
-            self.LIST_URL,
-            self.ADD_URL,
-            self.SUCCESS_URL,
-            self.DETAIL_URL,
-            self.EDIT_URL,
-            self.DELETE_URL,
-        ):
+        for url, redirect_url in [
+            (self.LIST_URL, self.LOGIN_REDIRECT_URLS['list']),
+            (self.ADD_URL, self.LOGIN_REDIRECT_URLS['add']),
+            (self.SUCCESS_URL, self.LOGIN_REDIRECT_URLS['success']),
+            (self.DETAIL_URL, self.LOGIN_REDIRECT_URLS['detail']),
+            (self.EDIT_URL, self.LOGIN_REDIRECT_URLS['edit']),
+            (self.DELETE_URL, self.LOGIN_REDIRECT_URLS['delete']),
+        ]:
             with self.subTest(url=url):
                 self.assertRedirects(
                     self.client.get(url),
-                    f'{self.LOGIN_URL}?next={url}'
+                    redirect_url
                 )

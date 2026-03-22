@@ -1,10 +1,12 @@
+from django.conf import settings
+
 from news.forms import CommentForm
 
 
-def test_news_count(client, home_url, news_count_on_home_page, multiple_news):
-    """Количество новостей на главной странице — не более 10."""
+def test_news_count(client, home_url, multiple_news):
     assert client.get(
-        home_url).context['object_list'].count() == news_count_on_home_page
+        home_url
+    ).context['object_list'].count() == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
 def test_news_order(client, home_url, multiple_news):

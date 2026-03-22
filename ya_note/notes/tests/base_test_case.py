@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -8,6 +10,10 @@ User = get_user_model()
 
 
 class BaseTestCase(TestCase):
+    OK = HTTPStatus.OK
+    NOT_FOUND = HTTPStatus.NOT_FOUND
+    FOUND = HTTPStatus.FOUND
+    NOTE_SLUG = 'note-slug'
     HOME_URL = reverse('notes:home')
     LOGIN_URL = reverse('users:login')
     SIGNUP_URL = reverse('users:signup')
@@ -15,6 +21,17 @@ class BaseTestCase(TestCase):
     LIST_URL = reverse('notes:list')
     ADD_URL = reverse('notes:add')
     SUCCESS_URL = reverse('notes:success')
+    DETAIL_URL = reverse('notes:detail', args=(NOTE_SLUG,))
+    EDIT_URL = reverse('notes:edit', args=(NOTE_SLUG,))
+    DELETE_URL = reverse('notes:delete', args=(NOTE_SLUG,))
+    LOGIN_REDIRECT_URLS = {
+        'list': f'{LOGIN_URL}?next={LIST_URL}',
+        'add': f'{LOGIN_URL}?next={ADD_URL}',
+        'success': f'{LOGIN_URL}?next={SUCCESS_URL}',
+        'detail': f'{LOGIN_URL}?next={DETAIL_URL}',
+        'edit': f'{LOGIN_URL}?next={EDIT_URL}',
+        'delete': f'{LOGIN_URL}?next={DELETE_URL}',
+    }
 
     @classmethod
     def setUpTestData(cls):
@@ -27,7 +44,7 @@ class BaseTestCase(TestCase):
         cls.note = Note.objects.create(
             title='Заголовок',
             text='Текст заметки',
-            slug='note-slug',
+            slug=cls.NOTE_SLUG,
             author=cls.author,
         )
         cls.form_data = {
@@ -35,6 +52,3 @@ class BaseTestCase(TestCase):
             'text': 'Новый текст',
             'slug': 'new-slug'
         }
-        cls.DETAIL_URL = reverse('notes:detail', args=(cls.note.slug,))
-        cls.EDIT_URL = reverse('notes:edit', args=(cls.note.slug,))
-        cls.DELETE_URL = reverse('notes:delete', args=(cls.note.slug,))

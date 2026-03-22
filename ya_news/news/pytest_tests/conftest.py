@@ -7,8 +7,6 @@ import pytest
 
 from news.models import Comment, News
 
-COMMENT_TEXT = 'Текст комментария'
-
 
 @pytest.fixture(autouse=True)
 def enable_db_access_for_all_tests(
@@ -47,20 +45,15 @@ def news():
 
 
 @pytest.fixture
-def news_count_on_home_page():
-    return settings.NEWS_COUNT_ON_HOME_PAGE
-
-
-@pytest.fixture
-def multiple_news(news_count_on_home_page):
-    News.objects.bulk_create([
+def multiple_news():
+    News.objects.bulk_create(
         News(
             title=f'Новость {index}',
             text='Просто текст.',
             date=datetime.today() - timedelta(days=index)
         )
-        for index in range(news_count_on_home_page + 1)
-    ])
+        for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
+    )
 
 
 @pytest.fixture
@@ -68,7 +61,7 @@ def comment(news, author):
     return Comment.objects.create(
         news=news,
         author=author,
-        text=COMMENT_TEXT
+        text='Текст комментария'
     )
 
 
@@ -104,4 +97,19 @@ def delete_url(comment):
 
 @pytest.fixture
 def url_to_comments(detail_url):
-    return detail_url + '#comments'
+    return f'{detail_url}#comments'
+
+
+@pytest.fixture
+def login_redirect_edit(login_url, edit_url):
+    return f'{login_url}?next={edit_url}'
+
+
+@pytest.fixture
+def login_redirect_delete(login_url, delete_url):
+    return f'{login_url}?next={delete_url}'
+
+
+@pytest.fixture
+def login_redirect_detail(login_url, detail_url):
+    return f'{login_url}?next={detail_url}'

@@ -13,40 +13,42 @@ DELETE_URL = lf('delete_url')
 CLIENT = lf('client')
 AUTHOR_CLIENT = lf('author_client')
 READER_CLIENT = lf('reader_client')
+LOGIN_REDIRECT_EDIT = lf('login_redirect_edit')
+LOGIN_REDIRECT_DELETE = lf('login_redirect_delete')
+OK = HTTPStatus.OK
+NOT_FOUND = HTTPStatus.NOT_FOUND
+FOUND = HTTPStatus.FOUND
 
 
 @pytest.mark.parametrize(
     'url, parametrized_client, expected_status',
     [
-        (DETAIL_URL, CLIENT, HTTPStatus.OK),
-        (HOME_URL, CLIENT, HTTPStatus.OK),
-        (SIGNUP_URL, CLIENT, HTTPStatus.OK),
-        (LOGIN_URL, CLIENT, HTTPStatus.OK),
-        (EDIT_URL, AUTHOR_CLIENT, HTTPStatus.OK),
-        (DELETE_URL, AUTHOR_CLIENT, HTTPStatus.OK),
-        (EDIT_URL, READER_CLIENT, HTTPStatus.NOT_FOUND),
-        (DELETE_URL, READER_CLIENT, HTTPStatus.NOT_FOUND),
+        (DETAIL_URL, CLIENT, OK),
+        (HOME_URL, CLIENT, OK),
+        (SIGNUP_URL, CLIENT, OK),
+        (LOGIN_URL, CLIENT, OK),
+        (EDIT_URL, AUTHOR_CLIENT, OK),
+        (DELETE_URL, AUTHOR_CLIENT, OK),
+        (EDIT_URL, READER_CLIENT, NOT_FOUND),
+        (DELETE_URL, READER_CLIENT, NOT_FOUND),
+        (EDIT_URL, CLIENT, FOUND),
+        (DELETE_URL, CLIENT, FOUND),
     ]
 )
 def test_pages_availability(parametrized_client, url, expected_status):
-    """
-    Анонимному пользователю доступны: главная страница, страница отдельной
-    новости, страницы регистрации пользователей и входа в учётную запись.
-    Страницы удаления и редактирования комментария доступны автору
-    комментария.
-    Авторизованный пользователь не может зайти на страницу редактирования или
-    удаления чужих комментариев (возвращается ошибка 404).
-    """
     assert parametrized_client.get(url).status_code == expected_status
 
 
 @pytest.mark.parametrize(
-    'url',
-    (EDIT_URL, DELETE_URL),
+    'url, login_redirect_url',
+    [
+        (EDIT_URL, LOGIN_REDIRECT_EDIT),
+        (DELETE_URL, LOGIN_REDIRECT_DELETE),
+    ]
 )
-def test_redirect_for_anonymous_client(client, url, login_url):
+def test_redirect_for_anonymous_client(client, url, login_redirect_url):
     """
     При попытке перейти на страницу редактирования или удаления комментария
     анонимный пользователь перенаправляется на страницу авторизации.
     """
-    assertRedirects(client.get(url), f'{login_url}?next={url}')
+    assertRedirects(client.get(url), login_redirect_url)
