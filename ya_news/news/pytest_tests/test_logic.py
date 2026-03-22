@@ -7,6 +7,7 @@ from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 
 FORM_DATA = {'text': 'Обновлённый комментарий'}
+BAD_WORDS_DATA = [{'text': bad_word} for bad_word in BAD_WORDS]
 
 
 def test_anonymous_user_cant_create_comment(
@@ -33,9 +34,7 @@ def test_user_can_create_comment(
     assert comment.author == author
 
 
-@pytest.mark.parametrize('data', [
-    {'text': bad_word} for bad_word in BAD_WORDS
-])
+@pytest.mark.parametrize('data', BAD_WORDS_DATA)
 def test_user_cant_use_bad_words(author_client, detail_url, data):
     """
     Если комментарий содержит запрещённые слова, он не будет опубликован,

@@ -6,22 +6,22 @@ from notes.models import Note
 
 
 class TestNoteManagement(BaseTestCase):
-    def create_note(self):
+    def create_note(self, expected_slug):
         notes = set(Note.objects.all())
         response = self.author_client.post(self.ADD_URL, data=self.form_data)
         self.assertRedirects(response, self.SUCCESS_URL)
         self.assertEqual(response.status_code, self.FOUND)
         new_notes = set(Note.objects.all()) - notes
         self.assertEqual(len(new_notes), 1)
-        return new_notes.pop()
+        new_note = new_notes.pop()
+        self.assertEqual(new_note.title, self.form_data['title'])
+        self.assertEqual(new_note.text, self.form_data['text'])
+        self.assertEqual(new_note.slug, expected_slug)
+        self.assertEqual(new_note.author, self.author)
 
     def test_user_can_create_note(self):
         """Залогиненный пользователь может создать заметку"""
-        new_note = self.create_note()
-        self.assertEqual(new_note.title, self.form_data['title'])
-        self.assertEqual(new_note.text, self.form_data['text'])
-        self.assertEqual(new_note.slug, self.form_data['slug'])
-        self.assertEqual(new_note.author, self.author)
+        self.create_note(self.form_data['slug'])
 
     def test_anonymous_user_cant_create_note(self):
         """Анонимный пользователь не может создать заметку"""
@@ -31,7 +31,7 @@ class TestNoteManagement(BaseTestCase):
         self.assertEqual(response.status_code, self.FOUND)
         self.assertEqual(notes, set(Note.objects.all()))
 
-    def test_creating_note_with_existing_slug_raises_error(self):
+    def test_creating_note_with_existing_slug_shows_error(self):
         """Невозможно создать две заметки с одинаковым slug"""
         self.form_data['slug'] = self.note.slug
         notes = set(Note.objects.all())
@@ -50,11 +50,7 @@ class TestNoteManagement(BaseTestCase):
         автоматически, с помощью функции pytils.translit.slugify
         """
         self.form_data.pop('slug')
-        new_note = self.create_note()
-        self.assertEqual(new_note.title, self.form_data['title'])
-        self.assertEqual(new_note.text, self.form_data['text'])
-        self.assertEqual(new_note.slug, slugify(self.form_data['title']))
-        self.assertEqual(new_note.author, self.author)
+        self.create_note(slugify(self.form_data['title']))
 
     def test_author_can_edit_note(self):
         """Автор может редактировать заметку"""
@@ -104,7 +100,6 @@ class TestNoteManagement(BaseTestCase):
             self.NOT_FOUND
         )
         self.assertEqual(notes, set(Note.objects.all()))
-        self.assertTrue(Note.objects.filter(id=self.note.id).exists())
         note = Note.objects.get(id=self.note.id)
         self.assertEqual(self.note.title, note.title)
         self.assertEqual(self.note.text, note.text)
